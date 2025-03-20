@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go  # 添加缺失的导入
 
 # 初始化配置
 st.set_page_config(layout="wide")
@@ -45,7 +46,7 @@ with col1:
 
 with col2:
     st.header("⚠️ 风险监测")
-    circulation = supply_month1 * sum(offspring_counts) * (1 - release_rate)
+    circulation = sum(offspring_counts) * (1 - release_rate)  # 修正这里的计算
     health_status = "正常" if (circulation/2000)<5 else "通胀预警"
     
     gauge = go.Figure(go.Indicator(
