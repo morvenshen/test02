@@ -11,7 +11,7 @@ def main():
         st.header("调控参数面板")
         col1, col2 = st.columns(2)
         with col1:
-            cycle = st.slider("繁殖周期(天)", 1, 60, 30)
+            cycle = st.slider("繁殖周期(天)", 1, 120, 30)
             count = st.number_input("至尊投放量", 1, 1000, 300)
             price = st.number_input("至尊价格", 0, 5000, 1000)
         with col2:
