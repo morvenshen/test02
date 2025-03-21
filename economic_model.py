@@ -8,7 +8,7 @@ def calculate_single_breeding(
     offspring_ratios={"普通":0.4, "稀有":0.3, "传说":0.2, "史诗":0.1},
     market_prices={"普通":20, "稀有":50, "传说":80, "史诗":160},
     transaction_fee=0.03,
-    supreme_price=1000  # 添加至尊价格参数
+    supreme_price=1000
 ):
     # 计算单只至尊级繁殖数据
     item_costs = {
@@ -58,7 +58,6 @@ def calculate_single_breeding(
     }
 
 def calculate_phase_data(supreme_count=300, **kwargs):
-    # 显式传递所有参数
     single_data = calculate_single_breeding(
         breeding_cycle=kwargs.get("breeding_cycle", 30),
         release_rate=kwargs.get("release_rate", 0.7),

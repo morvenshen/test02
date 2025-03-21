@@ -42,7 +42,6 @@ def main():
             "仙草": st.number_input("仙草价格", min_value=0, value=15, step=1)
         }
 
-    # 参数整合
     params = {
         "breeding_cycle": breeding_cycle,
         "release_rate": release_rate,
@@ -50,10 +49,9 @@ def main():
         "item_prices": item_prices,
         "offspring_ratios": offspring_ratios,
         "market_prices": market_prices,
-        "supreme_price": supreme_price  # 确保传递至尊价格
+        "supreme_price": supreme_price
     }
     
-    # 实时计算
     try:
         phase_df = calculate_phase_data(supreme_count=supreme_count, **params)
     except Exception as e:
@@ -90,11 +88,26 @@ def main():
         height=300
     )
     
-    # 市场流通明细
+    # 市场流通明细（修复括号闭合问题）
     st.subheader("市场流通分布")
     circulation_data = {
         "等级": ["普通", "稀有", "传说", "史诗"],
         "数量": [
             phase_df["市场流通量-普通"].iloc[0],
             phase_df["市场流通量-稀有"].iloc[0],
-            phase_df["市场流通量-传说"].iloc[
+            phase_df["市场流通量-传说"].iloc[0],
+            phase_df["市场流通量-史诗"].iloc[0]  # 修复缺少的闭合括号
+        ]
+    }
+    fig = px.bar(
+        circulation_data,
+        x="等级",
+        y="数量",
+        text="数量",
+        title="各等级流通量明细"
+    )
+    fig.update_traces(texttemplate='%{text:,.0f}')
+    st.plotly_chart(fig, use_container_width=True)
+
+if __name__ == "__main__":
+    main()
