@@ -55,7 +55,7 @@ def main():
     try:
         phase_df = calculate_phase_data(supreme_count=supreme_count, **params)
     except Exception as e:
-        st.error(f"参数错误: {str(e)}")
+        st.error(f"计算错误: {str(e)}")
         return
     
     # 核心指标展示
@@ -67,47 +67,32 @@ def main():
     col3.metric("新增后代总数", f"{phase_df['新增后代总数'].iloc[0]:,.0f}只")
 
     # 详细数据分析
-    st.subheader("周期全局影响分析")
+    st.subheader("经济明细分析")
     analysis_data = {
-        "指标": [
-            "至尊级销售额", "后代总销售额", "道具总消耗", 
-            "总交易手续费", "用户总成本", "单用户净收益"
-        ],
-        "数值": [
+        "指标": ["至尊销售额", "道具消耗", "手续费", "用户成本", "后代销售"],
+        "金额(¥)": [
             phase_df["至尊级销售额"].iloc[0],
-            phase_df["后代总销售额"].iloc[0],
             phase_df["道具总消耗"].iloc[0],
             phase_df["总交易手续费"].iloc[0],
             phase_df["用户总成本"].iloc[0],
-            phase_df["用户总净收益"].iloc[0] / supreme_count if supreme_count>0 else 0
+            phase_df["后代总销售额"].iloc[0]
         ]
     }
-    st.dataframe(
-        pd.DataFrame(analysis_data).style.format({"数值": "¥{:,.0f}"}),
-        use_container_width=True,
-        height=300
+    fig = px.pie(
+        analysis_data, 
+        names="指标", 
+        values="金额(¥)",
+        title="收益构成分析",
+        hole=0.4
     )
-    
-    # 市场流通明细（修复括号闭合问题）
-    st.subheader("市场流通分布")
-    circulation_data = {
-        "等级": ["普通", "稀有", "传说", "史诗"],
-        "数量": [
-            phase_df["市场流通量-普通"].iloc[0],
-            phase_df["市场流通量-稀有"].iloc[0],
-            phase_df["市场流通量-传说"].iloc[0],
-            phase_df["市场流通量-史诗"].iloc[0]  # 修复缺少的闭合括号
-        ]
-    }
-    fig = px.bar(
-        circulation_data,
-        x="等级",
-        y="数量",
-        text="数量",
-        title="各等级流通量明细"
-    )
-    fig.update_traces(texttemplate='%{text:,.0f}')
     st.plotly_chart(fig, use_container_width=True)
+
+    # 数据表格展示
+    st.subheader("详细数据视图")
+    st.dataframe(
+        phase_df.T.style.format("{:,.0f}"),
+        use_container_width=True
+    )
 
 if __name__ == "__main__":
     main()
