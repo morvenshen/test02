@@ -39,17 +39,17 @@ def calculate_single_breeding(
         for level, count in offspring_counts.items()
     }
     
-    # 后代总销售额（不含手续费）
+    # 后代总销售额（所有生产的宝宝数量×价格）
     total_offspring_sales = sum(
-        actual_circulation[level] * market_prices[level]
+        offspring_counts[level] * market_prices[level]
         for level in ["普通", "稀有", "传说", "史诗"]
     )
     
-    # 交易手续费计算
+    # 交易手续费计算（基于总销售额）
     transaction_fee_total = total_offspring_sales * transaction_fee
     
-    # 用户净收益计算
-    user_net_profit = (total_offspring_sales - transaction_fee_total) - supreme_price - total_item_cost
+    # 用户净收益计算（新公式）
+    user_net_profit = total_offspring_sales - supreme_price - total_item_cost - transaction_fee_total
     
     return {
         "单只成本": supreme_price + total_item_cost,
@@ -64,8 +64,8 @@ def calculate_single_breeding(
 def calculate_phase_data(supreme_count=300, **kwargs):
     single_data = calculate_single_breeding(**kwargs)
     
-    # 至尊级总销售额
-    supreme_sales = kwargs.get("supreme_price", 1000) * supreme_count
+    # 至尊级总费用
+    supreme_total = kwargs.get("supreme_price", 1000) * supreme_count
     
     # 道具总消耗
     total_item_cost = single_data["道具成本"] * supreme_count
@@ -76,21 +76,21 @@ def calculate_phase_data(supreme_count=300, **kwargs):
     # 总交易手续费
     total_fee = single_data["交易手续费"] * supreme_count
     
-    # 用户总成本
-    user_total_cost = (kwargs.get("supreme_price", 1000) + single_data["道具成本"]) * supreme_count + total_fee
+    # 用户总净收益计算
+    user_total_profit = total_offspring_sales - supreme_total - total_item_cost - total_fee
     
     # 平台总收益
-    platform_profit = supreme_sales + total_item_cost + total_fee
+    platform_profit = supreme_total + total_item_cost + total_fee
     
     return pd.DataFrame([{
         "新增后代总数": single_data["总后代数量"] * supreme_count,
-        "至尊级销售额": supreme_sales,
+        "至尊级销售额": supreme_total,
         "道具总消耗": total_item_cost,
         "总交易手续费": total_fee,
         "平台总收益": platform_profit,
         "后代总销售额": total_offspring_sales,
-        "用户总成本": user_total_cost,
-        "用户总净收益": (total_offspring_sales - total_fee) - user_total_cost + total_fee,  # 修正计算
+        "用户总成本": supreme_total + total_item_cost,
+        "购买至尊级用户净收益": user_total_profit,
         "市场流通量-普通": single_data["市场流通量"]["普通"] * supreme_count,
         "市场流通量-稀有": single_data["市场流通量"]["稀有"] * supreme_count,
         "市场流通量-传说": single_data["市场流通量"]["传说"] * supreme_count,

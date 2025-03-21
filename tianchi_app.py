@@ -62,35 +62,41 @@ def main():
     st.subheader("核心经济指标")
     col1, col2, col3 = st.columns(3)
     col1.metric("平台总收益", f"¥{phase_df['平台总收益'].iloc[0]:,.0f}")
-    col2.metric("用户总净收益", f"¥{phase_df['用户总净收益'].iloc[0]:,.0f}", 
-              delta_color="inverse" if phase_df['用户总净收益'].iloc[0]<0 else "normal")
+    col2.metric("用户净收益", f"¥{phase_df['购买至尊级用户净收益'].iloc[0]:,.0f}", 
+              delta_color="inverse" if phase_df['购买至尊级用户净收益'].iloc[0]<0 else "normal")
     col3.metric("新增后代总数", f"{phase_df['新增后代总数'].iloc[0]:,.0f}只")
 
-    # 详细数据分析
-    st.subheader("经济明细分析")
-    analysis_data = {
-        "指标": ["至尊销售额", "道具消耗", "手续费", "用户成本", "后代销售"],
-        "金额(¥)": [
+    # 收益构成分析
+    st.subheader("收益构成分析")
+    profit_data = {
+        "来源": ["至尊销售", "道具销售", "交易手续费"],
+        "金额": [
             phase_df["至尊级销售额"].iloc[0],
             phase_df["道具总消耗"].iloc[0],
-            phase_df["总交易手续费"].iloc[0],
-            phase_df["用户总成本"].iloc[0],
-            phase_df["后代总销售额"].iloc[0]
+            phase_df["总交易手续费"].iloc[0]
         ]
     }
     fig = px.pie(
-        analysis_data, 
-        names="指标", 
-        values="金额(¥)",
-        title="收益构成分析",
+        profit_data, 
+        names="来源", 
+        values="金额",
+        title="平台收益构成",
         hole=0.4
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # 数据表格展示
-    st.subheader("详细数据视图")
+    # 数据验证展示
+    st.subheader("计算明细验证")
+    verification_data = {
+        "项目": ["单只至尊产值", "单只总成本", "单只净收益"],
+        "金额": [
+            phase_df["后代总销售额"].iloc[0] / supreme_count,
+            phase_df["用户总成本"].iloc[0] / supreme_count,
+            phase_df["购买至尊级用户净收益"].iloc[0] / supreme_count
+        ]
+    }
     st.dataframe(
-        phase_df.T.style.format("{:,.0f}"),
+        pd.DataFrame(verification_data).style.format({"金额": "¥{:,.0f}"}),
         use_container_width=True
     )
 
