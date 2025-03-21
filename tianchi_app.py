@@ -14,6 +14,7 @@ def main():
         with col1:
             breeding_cycle = st.number_input("繁殖周期(天)", min_value=1, value=30, step=1)
             supreme_count = st.number_input("每期至尊数量", min_value=1, value=300, step=1)
+            supreme_price = st.number_input("至尊级价格", min_value=0, value=1000, step=100)
         with col2:
             release_rate = st.number_input("放生率", min_value=0.0, max_value=1.0, value=0.7, step=0.01)
             transaction_fee = st.number_input("手续费率", min_value=0.0, max_value=1.0, value=0.03, step=0.01)
@@ -48,7 +49,8 @@ def main():
         "transaction_fee": transaction_fee,
         "item_prices": item_prices,
         "offspring_ratios": offspring_ratios,
-        "market_prices": market_prices
+        "market_prices": market_prices,
+        "supreme_price": supreme_price
     }
     
     # 实时计算
@@ -60,28 +62,33 @@ def main():
         return
     
     # 核心指标展示
+    st.subheader("核心经济指标")
     col1, col2, col3 = st.columns(3)
-    col1.metric("单用户净收益", f"¥{single_data['单只收益']:,.0f}", 
-              delta_color="inverse" if single_data['单只收益']<0 else "normal")
-    col2.metric("单平台收益", f"¥{single_data['平台收入']:,.0f}")
-    col3.metric("总流通量", f"{sum(single_data['市场流通量'].values())*supreme_count:,.0f}只")
-    
-    # 周期影响分析
+    col1.metric("平台总收益", f"¥{phase_df['平台总收益'].iloc[0]:,.0f}")
+    col2.metric("用户总净收益", f"¥{phase_df['用户总净收益'].iloc[0]:,.0f}", 
+              delta_color="inverse" if phase_df['用户总净收益'].iloc[0]<0 else "normal")
+    col3.metric("新增后代总数", f"{phase_df['新增后代总数'].iloc[0]:,.0f}只")
+
+    # 详细数据分析
     st.subheader("周期全局影响分析")
-    display_data = {
-        "指标": ["平台总收益", "用户总收益", "至尊数量", "繁殖周期"],
+    analysis_data = {
+        "指标": [
+            "至尊级销售额", "后代总销售额", "道具总消耗", 
+            "总交易手续费", "用户总成本", "单用户净收益"
+        ],
         "数值": [
-            phase_df["平台总收益"].iloc[0],
-            phase_df["用户总收益"].iloc[0],
-            phase_df["至尊数量"].iloc[0],
-            f"{breeding_cycle}天"
+            phase_df["至尊级销售额"].iloc[0],
+            phase_df["后代总销售额"].iloc[0],
+            phase_df["道具总消耗"].iloc[0],
+            phase_df["总交易手续费"].iloc[0],
+            phase_df["用户总成本"].iloc[0],
+            phase_df["用户总净收益"].iloc[0] / supreme_count if supreme_count>0 else 0
         ]
     }
-    df = pd.DataFrame(display_data)
     st.dataframe(
-        df.style.format({"数值": lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) else x}),
+        pd.DataFrame(analysis_data).style.format({"数值": "¥{:,.0f}"}),
         use_container_width=True,
-        hide_index=True
+        height=300
     )
     
     # 市场流通明细
