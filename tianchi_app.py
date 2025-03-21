@@ -50,12 +50,11 @@ def main():
         "item_prices": item_prices,
         "offspring_ratios": offspring_ratios,
         "market_prices": market_prices,
-        "supreme_price": supreme_price
+        "supreme_price": supreme_price  # 确保传递至尊价格
     }
     
     # 实时计算
     try:
-        single_data = calculate_single_breeding(**params)
         phase_df = calculate_phase_data(supreme_count=supreme_count, **params)
     except Exception as e:
         st.error(f"参数错误: {str(e)}")
@@ -98,19 +97,4 @@ def main():
         "数量": [
             phase_df["市场流通量-普通"].iloc[0],
             phase_df["市场流通量-稀有"].iloc[0],
-            phase_df["市场流通量-传说"].iloc[0],
-            phase_df["市场流通量-史诗"].iloc[0]
-        ]
-    }
-    fig = px.bar(
-        circulation_data,
-        x="等级",
-        y="数量",
-        text="数量",
-        title="各等级流通量明细"
-    )
-    fig.update_traces(texttemplate='%{text:,.0f}')
-    st.plotly_chart(fig, use_container_width=True)
-
-if __name__ == "__main__":
-    main()
+            phase_df["市场流通量-传说"].iloc[
