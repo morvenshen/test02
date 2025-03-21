@@ -1,97 +1,64 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from economic_model import EconomicModel
 
-# ===== PRD核心参数（不可修改）=====
-INITIAL_INVESTMENT = 1000  # 用户初始投入
-TARGET_RETURN = 0.2        # 目标收益率20%
-MONTHS = [1, 2, 3, 6]      # 必须计算的月份
+# 初始化模型
+model = EconomicModel()
 
-# ===== 经济模型函数 =====
-def calculate_economics(params):
-    """
-    根据PRD第4章公式计算多周期经济指标
-    输入参数：
-        params: dict 包含所有可调参数
-    返回：
-        DataFrame 包含各月份完整指标
-    """
-    results = []
-    cumulative_supply = 0
+def main():
+    st.set_page_config(page_title="天池经济模拟", layout="wide")
     
-    for month in MONTHS:
-        # 繁殖量计算（PRD Eq.3）
-        new_supply = params['base_supply'] * (1 + params['growth_rate'])**month
-        
-        # 市场流通量（PRD Eq.7）
-        circulation = new_supply * (1 - params['release_rate'])
-        
-        # 用户收益计算（PRD Eq.11）
-        platform_cut = params['price'] * new_supply * params['platform_fee']
-        user_income = (params['price'] * new_supply - platform_cut) - INITIAL_INVESTMENT
-        
-        # 收益率验证
-        return_rate = user_income / INITIAL_INVESTMENT
-        
-        results.append({
-            "月份": month,
-            "新增投放量": round(new_supply),
-            "市场流通量": round(circulation),
-            "平台抽成": round(platform_cut,2),
-            "用户净收益": round(user_income,2),
-            "累计收益率": f"{return_rate:.1%}",
-            "达标状态": "✅" if return_rate >= TARGET_RETURN else "⚠️"
-        })
-        
-    return pd.DataFrame(results)
-
-# ===== 界面构建 =====
-st.set_page_config(layout="wide")
-st.title("天链经济模拟器 v2.0")
-
-# 参数控制面板
-with st.sidebar:
-    st.header("⚙️ 调控参数")
-    params = {
-        'base_supply': st.slider("基础投放量", 100, 5000, 1000, step=100),
-        'growth_rate': st.slider("月增长率", 0.05, 0.5, 0.15, step=0.05),
-        'price': st.number_input("单位价格（元）", 10, 1000, 100),
-        'release_rate': st.slider("放生率", 0.3, 0.9, 0.6),
-        'platform_fee': st.slider("平台费率", 0.01, 0.2, 0.03)
-    }
-
-# 计算并展示结果
-df = calculate_economics(params)
-
-# 主显示区
-col1, col2 = st.columns([1,2])
-
-with col1:
-    st.metric("当前收益率", 
-             df.iloc[-1]['累计收益率'],
-             delta=f"目标 {TARGET_RETURN:.0%}",
-             help="最终月份达标即视为整体成功")
+    # 侧边栏参数控制
+    with st.sidebar:
+        st.header("核心参数配置")
+        params = {
+            '至尊数量': st.slider("至尊级神兽数量", 1, 3000, 300),
+            '放生率': st.slider("放生率", 0.0, 1.0, 0.7),
+            '姻缘丹': st.number_input("姻缘丹消耗量", 30),
+            '饲料': st.number_input("饲料消耗量", 37),
+            '仙草': st.number_input("仙草消耗量", 2)
+        }
     
-    st.dataframe(
-        df.style.applymap(lambda x: "background-color: #E8F5E9" if "✅" in str(x) else ""),
-        height=400
-    )
+    # 模型计算
+    results = model.calculate_monthly(params)
+    
+    # 主界面布局
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("经济指标")
+        metric_col1, metric_col2 = st.columns(2)
+        metric_col1.metric("平台收益", f"¥{results['平台收益']:,.0f}")
+        metric_col2.metric("用户净收益", f"¥{results['用户净收益']:,.0f}")
+        
+        st.write("### 市场流通分析")
+        fig1 = px.bar(
+            x=['当前流通量'],
+            y=[results['市场流通量']],
+            labels={'x': '指标', 'y': '数量'}
+        )
+        st.plotly_chart(fig1, use_container_width=True)
+    
+    with col2:
+        st.subheader("健康度仪表盘")
+        st.write("#### 风险监测")
+        
+        # 风险指标计算
+        risk_level = "🟢 正常" 
+        if results['用户净收益'] / results['平台收益'] < 0.2:
+            risk_level = "🔴 收益失衡"
+        elif results['市场流通量'] > 2000 * 5:
+            risk_level = "🟡 流通量预警"
+            
+        st.metric("系统状态", risk_level)
+        
+        st.write("### 收益结构分析")
+        fig2 = px.pie(
+            names=['平台收益', '用户收益'],
+            values=[results['平台收益'], results['用户净收益']]
+        )
+        st.plotly_chart(fig2, use_container_width=True)
 
-with col2:
-    # 收益率趋势图
-    fig = px.line(
-        df, x='月份', y='累计收益率',
-        markers=True, 
-        title=f"收益达成进程（最终：{df.iloc[-1]['累计收益率']}）",
-        labels={'累计收益率': '收益率'}
-    )
-    fig.add_hline(y=TARGET_RETURN, line_dash="dot",
-                 annotation_text="目标线", 
-                 annotation_position="bottom right")
-    st.plotly_chart(fig, use_container_width=True)
-
-# ===== 调试信息 =====
-with st.expander("📊 原始数据"):
-    st.write("计算参数：", params)
-    st.write("详细计算结果：", df)
-
+if __name__ == "__main__":
+    main()
