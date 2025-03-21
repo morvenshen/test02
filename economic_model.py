@@ -1,73 +1,64 @@
 # economic_model.py
 import pandas as pd
 
-def calculate_single_breeding(
-    breeding_cycle=30,
-    release_rate=0.7,
-    item_prices={"姻缘丹":5, "饲料":5, "仙草":15},
-    offspring_ratios={"普通":0.4, "稀有":0.3, "传说":0.2, "史诗":0.1},
-    market_prices={"普通":20, "稀有":50, "传说":80, "史诗":160},
-    transaction_fee=0.03,
-    supreme_price=1000
-):
-    # 精确道具成本计算
-    item_cost = (
-        breeding_cycle * item_prices["姻缘丹"] +
-        (breeding_cycle + 7) * item_prices["饲料"] +
-        2 * item_prices["仙草"]
-    )
-    
-    # 后代数量计算（精确浮点运算）
-    cycle_ratio = breeding_cycle / 30
-    base_counts = {
-        "普通": 12 * cycle_ratio,
-        "稀有": 9 * cycle_ratio,
-        "传说": 6 * cycle_ratio,
-        "史诗": 3 * cycle_ratio
-    }
-    
-    # 后代数量分配（确保最小数量）
-    offspring_counts = {
-        level: max(round(base_counts[level] * offspring_ratios[level]), 1)
-        for level in ["普通", "稀有", "传说", "史诗"]
-    }
-    
-    # 销售额计算（包含所有后代）
-    total_sales = sum(
-        count * market_prices[level]
-        for level, count in offspring_counts.items()
-    )
-    
-    # 净收益计算（关键修正）
-    transaction_cost = total_sales * transaction_fee
-    net_profit = total_sales - supreme_price - item_cost - transaction_cost
-    
-    return {
-        "单只总成本": supreme_price + item_cost,
-        "单只销售额": total_sales,
-        "单只净收益": net_profit,
-        "交易手续费": transaction_cost,
-        "总后代数": sum(offspring_counts.values())
-    }
+class EconomicModel:
+    @staticmethod
+    def calculate_phase(supreme_count=300, phase_month=1):
+        """
+        严格遵循参考数值表的计算规则
+        :param supreme_count: 至尊级投放量
+        :param phase_month: 当前阶段月份(1-6)
+        :return: 包含完整经济数据的DataFrame
+        """
+        # 阶段参数校验
+        if phase_month < 1 or phase_month > 6:
+            raise ValueError("阶段月份必须在1-6之间")
 
-def calculate_phase_data(supreme_count=300, **kwargs):
-    single = calculate_single_breeding(**kwargs)
-    
-    # 总收益计算（修正量级错误）
-    total_sales = single["单只销售额"] * supreme_count
-    total_cost = single["单只总成本"] * supreme_count
-    
-    # 手续费应基于总销售额重新计算（关键修正）
-    total_fee = total_sales * kwargs["transaction_fee"]
-    
-    net_profit = total_sales - total_cost - total_fee
-    
-    return pd.DataFrame([{
-        "至尊总投入": total_cost,
-        "后代总销售额": total_sales,
-        "总交易手续费": total_fee,
-        "购买至尊级用户净收益": net_profit,
-        "平台总收益": total_cost + total_fee,
-        "单只收益率": net_profit / total_cost * 100,
-        "有效后代数量": single["总后代数"] * supreme_count,
-    }])
+        # 基础参数（来自文档第1章）
+        BASE_PRODUCTION = {
+            "普通": 12, "稀有": 9, "传说": 6, "史诗": 3  # 固定产量
+        }
+        ITEM_COST_PER = 365  # 固定道具成本
+        
+        # 阶段参数（来自文档第2章）
+        phase_params = {
+            1: {"release": 300, "dynamic_price": 55},
+            2: {"release": 100, "dynamic_price": 55},
+            3: {"release": 30, "dynamic_price": 55},
+            6: {"release": 30, "dynamic_price": 55}
+        }
+        params = phase_params.get(phase_month, phase_params[6])
+
+        # 核心计算（来自文档第2章首月经济测算）
+        total_offspring = sum(BASE_PRODUCTION.values()) * supreme_count
+        total_sales = total_offspring * params["dynamic_price"]
+        
+        # 成本计算
+        supreme_cost = 1000 * supreme_count
+        item_cost = ITEM_COST_PER * supreme_count
+        transaction_fee = total_sales * 0.03
+        
+        # 收益计算
+        platform_income = supreme_cost + item_cost + transaction_fee
+        user_profit = total_sales - (supreme_cost + item_cost + transaction_fee)
+        
+        # 健康度指标（来自文档第4章）
+        health_metrics = {
+            "market_digestion": 0.7,
+            "inflation_rate": 0.0,
+            "user_retention": [0.75, 0.78, 0.82, 0.85][min(phase_month-1, 3)]
+        }
+
+        return pd.DataFrame([{
+            "阶段月份": phase_month,
+            "至尊投放量": supreme_count,
+            "后代总产量": total_offspring,
+            "动态定价": params["dynamic_price"],
+            "平台总收益": platform_income,
+            "用户净收益": user_profit,
+            "市场消化率": health_metrics["market_digestion"],
+            "用户留存率": health_metrics["user_retention"],
+            "至尊级成本": supreme_cost,
+            "道具总成本": item_cost,
+            "交易手续费": transaction_fee
+        }])
