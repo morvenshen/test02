@@ -1,7 +1,7 @@
 """
 天池应用前端
-版本：2.2
-增强错误处理机制
+版本：2.3
+修复f-string语法错误
 """
 from economic_model import TaoistEconSimulator
 import pandas as pd
@@ -66,10 +66,13 @@ class TianchiApp:
             with st.spinner('生成数据看板...'):
                 # 关键指标卡
                 col1, col2 = st.columns(2)
-                col1.metric("平台总收益", 
-                    f"¥{sum([m['平台收益']['总收益'] for m in self.simulation_data['月度数据']):,}")
-                col2.metric("总功德值", 
-                    f"{sum([m['总功德值'] for m in self.simulation_data['月度数据']):,}")
+                
+                # 修复点：正确格式化数字
+                平台总收益 = sum([m['平台收益']['总收益'] for m in self.simulation_data['月度数据'])
+                col1.metric("平台总收益", f"¥{平台总收益:,.2f}")
+                
+                总功德值 = sum([m['总功德值'] for m in self.simulation_data['月度データ']])
+                col2.metric("总功德值", f"{总功德值:,.2f}")
                 
                 # 图表区
                 st.altair_chart(self.生成折线图('市场饱和度'), use_container_width=True)
