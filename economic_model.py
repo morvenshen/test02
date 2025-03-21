@@ -10,7 +10,6 @@ def calculate_single_breeding(
     transaction_fee=0.03,
     supreme_price=1000
 ):
-    # 计算单只至尊级繁殖数据
     # 道具成本计算
     item_costs = {
         "姻缘丹": breeding_cycle * item_prices["姻缘丹"],
@@ -90,7 +89,7 @@ def calculate_phase_data(supreme_count=300, **kwargs):
         "平台总收益": platform_profit,
         "后代总销售额": total_offspring_sales,
         "用户总成本": supreme_total + total_item_cost,
-        "购买至尊级用户净收益": user_total_profit,
+        "购买至尊级用户净收益": user_total_profit,  # 确保字段名称统一
         "市场流通量-普通": single_data["市场流通量"]["普通"] * supreme_count,
         "市场流通量-稀有": single_data["市场流通量"]["稀有"] * supreme_count,
         "市场流通量-传说": single_data["市场流通量"]["传说"] * supreme_count,
