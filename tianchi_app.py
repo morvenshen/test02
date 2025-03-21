@@ -12,8 +12,8 @@ def main():
         st.header("核心参数")
         col1, col2 = st.columns(2)
         with col1:
-            supreme_price = st.slider("至尊价格", 500, 2000, 1000)
-            supreme_count = st.slider("每月至尊数量", 100, 1000, 300)
+            breeding_cycle = st.slider("繁殖周期(天)", 15, 60, 30)
+            supreme_count = st.slider("每期至尊数量", 100, 1000, 300)
         with col2:
             release_rate = st.slider("放生率", 0.5, 0.9, 0.7)
             transaction_fee = st.slider("手续费率", 0.01, 0.05, 0.03)
@@ -43,7 +43,7 @@ def main():
 
     # 参数整合
     params = {
-        "supreme_price": supreme_price,
+        "breeding_cycle": breeding_cycle,
         "release_rate": release_rate,
         "transaction_fee": transaction_fee,
         "item_prices": item_prices,
@@ -57,42 +57,48 @@ def main():
     
     # 核心指标展示
     col1, col2, col3 = st.columns(3)
-    col1.metric("单只用户收益", f"¥{single_data['单只收益']:,.0f}", 
+    col1.metric("单用户净收益", f"¥{single_data['单只收益']:,.0f}", 
               delta_color="inverse" if single_data['单只收益']<0 else "normal")
-    col2.metric("单只平台收益", f"¥{single_data['平台收入']:,.0f}")
-    col3.metric("单只市场流通", f"{sum(single_data['市场流通量'].values()):,.0f}只")
+    col2.metric("单平台收益", f"¥{single_data['平台收入']:,.0f}")
+    col3.metric("总流通量", f"{sum(single_data['市场流通量'].values())*supreme_count:,.0f}只")
     
-    # 全局影响分析
-    st.subheader("月度全局影响分析")
-    display_df = phase_df.T.reset_index()
-    display_df.columns = ["指标", "数值"]
+    # 周期影响分析
+    st.subheader("周期全局影响分析")
+    display_data = {
+        "指标": ["平台总收益", "用户总收益", "至尊数量", "繁殖周期"],
+        "数值": [
+            phase_df["平台总收益"].iloc[0],
+            phase_df["用户总收益"].iloc[0],
+            phase_df["至尊数量"].iloc[0],
+            f"{breeding_cycle}天"
+        ]
+    }
     st.dataframe(
-        display_df.style.format({"数值": "{:,.0f}"}),
+        pd.DataFrame(display_data).style.format({"数值": "{:,.0f}"}),
         use_container_width=True,
         hide_index=True
     )
     
-    # 可视化分析
-    col1, col2 = st.columns(2)
-    with col1:
-        fig = px.pie(
-            names=list(single_data["市场流通量"].keys()),
-            values=list(single_data["市场流通量"].values()),
-            title="市场流通构成"
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    
-    with col2:
-        cost_data = {
-            "至尊购买": supreme_price,
-            "道具成本": sum([30*item_prices["姻缘丹"], 37*item_prices["饲料"], 2*item_prices["仙草"]])
-        }
-        fig = px.pie(
-            names=list(cost_data.keys()),
-            values=list(cost_data.values()),
-            title="成本构成分析"
-        )
-        st.plotly_chart(fig, use_container_width=True)
+    # 市场流通明细
+    st.subheader("市场流通分布")
+    circulation_data = {
+        "等级": ["普通", "稀有", "传说", "史诗"],
+        "数量": [
+            phase_df["市场流通量-普通"].iloc[0],
+            phase_df["市场流通量-稀有"].iloc[0],
+            phase_df["市场流通量-传说"].iloc[0],
+            phase_df["市场流通量-史诗"].iloc[0]
+        ]
+    }
+    fig = px.bar(
+        circulation_data,
+        x="等级",
+        y="数量",
+        text="数量",
+        title="各等级流通量明细"
+    )
+    fig.update_traces(texttemplate='%{text:,.0f}')
+    st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()
