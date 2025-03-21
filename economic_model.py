@@ -3,7 +3,6 @@ import pandas as pd
 
 def calculate_single_breeding(
     supreme_price=1000,
-    breeding_cycle=30,
     release_rate=0.7,
     item_prices={"姻缘丹":5, "饲料":5, "仙草":15},
     offspring_ratios={"普通":0.4, "稀有":0.3, "传说":0.2, "史诗":0.1},
@@ -18,16 +17,12 @@ def calculate_single_breeding(
     }
     total_item_cost = sum(item_costs.values())
     
+    # 后代数量计算（基于比例）
     offspring_counts = {
-        "普通": 12,
-        "稀有": 9, 
-        "传说": 6,
-        "史诗": 3
-    }
-    
-    # 理论产量计算
-    theoretical_production = {
-        level: count for level, count in offspring_counts.items()
+        "普通": int(12 * offspring_ratios["普通"]),
+        "稀有": int(9 * offspring_ratios["稀有"]),
+        "传说": int(6 * offspring_ratios["传说"]),
+        "史诗": int(3 * offspring_ratios["史诗"])
     }
     
     # 实际流通量
@@ -52,34 +47,15 @@ def calculate_single_breeding(
         "单只收益": user_net_profit,
         "平台收入": platform_income,
         "市场流通量": actual_circulation,
-        "理论产量": theoretical_production,
         "功德值": sum(actual_circulation[level] * market_prices[level] * 0.5 
                   for level in ["普通", "稀有", "传说", "史诗"])
     }
 
-def calculate_phase_data(
-    user_count=2000,
-    months=[1, 2, 3, 6],
-    **kwargs
-):
-    phase_results = []
-    for month in months:
-        supreme_count = {
-            1: 300,
-            2: 100,
-            3: 30,
-            6: 30
-        }.get(month, 30)
-        
-        single_data = calculate_single_breeding(**kwargs)
-        phase_data = {
-            "月份": f"第{month}月",
-            "平台收益": single_data["平台收入"] * supreme_count,
-            "用户总收益": single_data["单只收益"] * supreme_count,
-            "市场流通量": sum(single_data["市场流通量"].values()) * supreme_count,
-            "功德值总量": single_data["功德值"] * supreme_count,
-            "至尊数量": supreme_count
-        }
-        phase_results.append(phase_data)
-    
-    return pd.DataFrame(phase_results)
+def calculate_phase_data(supreme_count=300, **kwargs):
+    single_data = calculate_single_breeding(**kwargs)
+    return pd.DataFrame([{
+        "平台总收益": single_data["平台收入"] * supreme_count,
+        "用户总收益": single_data["单只收益"] * supreme_count,
+        "市场总流通量": sum(single_data["市场流通量"].values()) * supreme_count,
+        "至尊数量": supreme_count
+    }])
