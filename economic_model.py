@@ -1,7 +1,7 @@
 """
 虚拟经济系统核心模型
-版本：2.0
-包含经济模拟、用户收益计算和功德体系
+版本：2.1
+修复实际流通量数据结构问题
 """
 
 class TaoistEconSimulator:
@@ -90,7 +90,8 @@ class TaoistEconSimulator:
             '月份': 月份,
             '至尊数量': 当前至尊数,
             '新增后代': sum(总产量.values()),
-            '实际流通量': sum(实际流通量.values()),
+            '实际流通量': 实际流通量,  # 保持字典结构 ✅
+            '总实际流通量': sum(实际流通量.values()),  # 新增总和字段 ✅
             '市场饱和度': round(饱和度, 2),
             '平台收益': 平台收益,
             '总功德值': 总功德,
@@ -115,7 +116,7 @@ class TaoistEconSimulator:
         # 用户指标计算
         user_stats = self.UserEconomics(self.params).计算个体指标(
             实际流通量={k:v//self.params['初始至尊数量'] 
-                   for k,v in result['实际流通量'].items()}
+                   for k,v in result['实际流通量'].items()}  # 使用修正后的字典结构 ✅
         )
         
         return {
