@@ -12,33 +12,33 @@ def main():
         st.header("核心参数")
         col1, col2 = st.columns(2)
         with col1:
-            breeding_cycle = st.slider("繁殖周期(天)", 15, 60, 30)
-            supreme_count = st.slider("每期至尊数量", 100, 1000, 300)
+            breeding_cycle = st.number_input("繁殖周期(天)", min_value=1, value=30, step=1)
+            supreme_count = st.number_input("每期至尊数量", min_value=1, value=300, step=1)
         with col2:
-            release_rate = st.slider("放生率", 0.5, 0.9, 0.7)
-            transaction_fee = st.slider("手续费率", 0.01, 0.05, 0.03)
+            release_rate = st.number_input("放生率", min_value=0.0, max_value=1.0, value=0.7, step=0.01)
+            transaction_fee = st.number_input("手续费率", min_value=0.0, max_value=1.0, value=0.03, step=0.01)
         
         st.subheader("后代市场价格")
         market_prices = {
-            "普通": st.number_input("普通价格", 10, 100, 20),
-            "稀有": st.number_input("稀有价格", 30, 200, 50),
-            "传说": st.number_input("传说价格", 50, 300, 80),
-            "史诗": st.number_input("史诗价格", 100, 500, 160)
+            "普通": st.number_input("普通价格", min_value=0, value=20, step=1),
+            "稀有": st.number_input("稀有价格", min_value=0, value=50, step=1),
+            "传说": st.number_input("传说价格", min_value=0, value=80, step=1),
+            "史诗": st.number_input("史诗价格", min_value=0, value=160, step=1)
         }
         
         st.subheader("繁殖比例")
         offspring_ratios = {
-            "普通": st.slider("普通比例", 0.2, 0.6, 0.4),
-            "稀有": st.slider("稀有比例", 0.15, 0.45, 0.3),
-            "传说": st.slider("传说比例", 0.1, 0.3, 0.2),
-            "史诗": st.slider("史诗比例", 0.05, 0.15, 0.1)
+            "普通": st.number_input("普通比例", min_value=0.0, max_value=1.0, value=0.4, step=0.01),
+            "稀有": st.number_input("稀有比例", min_value=0.0, max_value=1.0, value=0.3, step=0.01),
+            "传说": st.number_input("传说比例", min_value=0.0, max_value=1.0, value=0.2, step=0.01),
+            "史诗": st.number_input("史诗比例", min_value=0.0, max_value=1.0, value=0.1, step=0.01)
         }
         
         st.subheader("道具成本")
         item_prices = {
-            "姻缘丹": st.number_input("姻缘丹价格", 3, 10, 5),
-            "饲料": st.number_input("饲料价格", 3, 10, 5),
-            "仙草": st.number_input("仙草价格", 10, 30, 15)
+            "姻缘丹": st.number_input("姻缘丹价格", min_value=0, value=5, step=1),
+            "饲料": st.number_input("饲料价格", min_value=0, value=5, step=1),
+            "仙草": st.number_input("仙草价格", min_value=0, value=15, step=1)
         }
 
     # 参数整合
@@ -52,8 +52,12 @@ def main():
     }
     
     # 实时计算
-    single_data = calculate_single_breeding(**params)
-    phase_df = calculate_phase_data(supreme_count=supreme_count, **params)
+    try:
+        single_data = calculate_single_breeding(**params)
+        phase_df = calculate_phase_data(supreme_count=supreme_count, **params)
+    except Exception as e:
+        st.error(f"参数错误: {str(e)}")
+        return
     
     # 核心指标展示
     col1, col2, col3 = st.columns(3)
@@ -73,8 +77,9 @@ def main():
             f"{breeding_cycle}天"
         ]
     }
+    df = pd.DataFrame(display_data)
     st.dataframe(
-        pd.DataFrame(display_data).style.format({"数值": "{:,.0f}"}),
+        df.style.format({"数值": lambda x: f"{x:,.0f}" if isinstance(x, (int, float)) else x}),
         use_container_width=True,
         hide_index=True
     )
