@@ -10,70 +10,64 @@ def calculate_single_breeding(
     transaction_fee=0.03,
     supreme_price=1000
 ):
-    # 道具成本计算（精确到浮点数）
-    item_costs = {
-        "姻缘丹": breeding_cycle * item_prices["姻缘丹"],
-        "饲料": (breeding_cycle + 7) * item_prices["饲料"],
-        "仙草": 2 * item_prices["仙草"]
-    }
-    total_item_cost = sum(item_costs.values())
+    # 精确道具成本计算
+    item_cost = (
+        breeding_cycle * item_prices["姻缘丹"] +
+        (breeding_cycle + 7) * item_prices["饲料"] +
+        2 * item_prices["仙草"]
+    )
     
-    # 后代基础数量计算（保留小数）
-    cycle_multiplier = breeding_cycle / 30  # 改用精确比例
+    # 后代数量计算（精确浮点运算）
+    cycle_ratio = breeding_cycle / 30
     base_counts = {
-        "普通": 12 * cycle_multiplier,
-        "稀有": 9 * cycle_multiplier,
-        "传说": 6 * cycle_multiplier,
-        "史诗": 3 * cycle_multiplier
+        "普通": 12 * cycle_ratio,
+        "稀有": 9 * cycle_ratio,
+        "传说": 6 * cycle_ratio,
+        "史诗": 3 * cycle_ratio
     }
     
-    # 实际后代数量（四舍五入代替取整）
+    # 后代数量分配（确保最小数量）
     offspring_counts = {
-        level: round(base_counts[level] * offspring_ratios[level])
+        level: max(round(base_counts[level] * offspring_ratios[level]), 1)
         for level in ["普通", "稀有", "传说", "史诗"]
     }
     
-    # 后代总销售额（使用精确计算）
-    total_offspring_sales = sum(
+    # 销售额计算（包含所有后代）
+    total_sales = sum(
         count * market_prices[level]
         for level, count in offspring_counts.items()
     )
     
-    # 交易手续费计算
-    transaction_fee_total = total_offspring_sales * transaction_fee
-    
-    # 用户净收益计算（修正公式）
-    user_net_profit = total_offspring_sales - (supreme_price + total_item_cost + transaction_fee_total)
+    # 净收益计算（关键修正）
+    transaction_cost = total_sales * transaction_fee
+    net_profit = total_sales - supreme_price - item_cost - transaction_cost
     
     return {
-        "单只成本": supreme_price + total_item_cost,
-        "单只收益": user_net_profit,
-        "后代总销售额": total_offspring_sales,
-        "交易手续费": transaction_fee_total,
-        "总后代数量": sum(offspring_counts.values())
+        "单只总成本": supreme_price + item_cost,
+        "单只销售额": total_sales,
+        "单只净收益": net_profit,
+        "交易手续费": transaction_cost,
+        "总后代数": sum(offspring_counts.values())
     }
 
 def calculate_phase_data(supreme_count=300, **kwargs):
-    single_data = calculate_single_breeding(**kwargs)
+    single = calculate_single_breeding(**kwargs)
     
-    # 总费用计算
-    supreme_total = kwargs["supreme_price"] * supreme_count
-    total_item_cost = (single_data["单只成本"] - kwargs["supreme_price"]) * supreme_count  # 精确道具成本
+    # 总收益计算（修正量级错误）
+    total_sales = single["单只销售额"] * supreme_count
+    total_cost = single["单只总成本"] * supreme_count
     
-    # 总收益计算
-    total_offspring_sales = single_data["后代总销售额"] * supreme_count
-    total_fee = total_offspring_sales * kwargs["transaction_fee"]  # 直接计算总手续费
+    # 手续费应基于总销售额重新计算（关键修正）
+    total_fee = total_sales * kwargs["transaction_fee"]
     
-    # 用户净收益（最终正确公式）
-    user_total_profit = total_offspring_sales - supreme_total - total_item_cost - total_fee
+    net_profit = total_sales - total_cost - total_fee
     
     return pd.DataFrame([{
-        "至尊级总费用": supreme_total,
-        "道具总消耗": total_item_cost,
-        "后代总销售额": total_offspring_sales,
+        "至尊总投入": total_cost,
+        "后代总销售额": total_sales,
         "总交易手续费": total_fee,
-        "用户总成本": supreme_total + total_item_cost,
-        "购买至尊级用户净收益": user_total_profit,
-        "平台总收益": supreme_total + total_item_cost + total_fee,
-        # 其他字段保持不变...
+        "购买至尊级用户净收益": net_profit,
+        "平台总收益": total_cost + total_fee,
+        "单只收益率": net_profit / total_cost * 100,
+        "有效后代数量": single["总后代数"] * supreme_count,
     }])
